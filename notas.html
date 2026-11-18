@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notas - Gaveta de Alunos</title>
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap"
+    rel="stylesheet">
+</head>
+
+<body>
+  <header class="header">
+    <nav class="navbar">
+      <div class="logo">
+        <img src="logo.png" alt="Logo">
+        <p>Gaveta de Alunos</p>
+      </div>
+      <button id="menu-toggle" class="menu-toggle" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="nav-links">
+        <span class="menu-icon" aria-hidden="true"></span>
+      </button>
+      <ul id="nav-links" class="nav-links">
+        <li><a href="index.html">Atividade</a></li>
+        <li><a href="alunos.html">Alunos</a></li>
+        <li><a href="notas.html">Gaveta de Notas</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <h1>Notas dos alunos</h1>
+    <div class="grade-controls">
+      <div class="form-group">
+        <label for="grade-view-mode">Visualização:</label>
+        <select id="grade-view-mode">
+          <option value="activity">Uma atividade</option>
+          <option value="class">Todas as atividades da turma</option>
+        </select>
+      </div>
+      <div class="form-group" id="grade-activity-control">
+        <label for="grade-activity">Atividade:</label>
+        <select id="grade-activity"></select>
+      </div>
+      <div class="form-group" id="grade-class-control" hidden>
+        <label for="grade-class">Turma:</label>
+        <select id="grade-class"></select>
+      </div>
+    </div>
+    <p id="grade-message" aria-live="polite"></p>
+    <div class="grade-table-wrapper">
+      <table id="grade-table" hidden>
+        <thead id="grade-table-head"></thead>
+        <tbody id="grade-table-body"></tbody>
+      </table>
+    </div>
+    <button id="save-grades" class="record-button edit-button" type="button" hidden>Salvar notas</button>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+
+</html>

@@ -1,43 +1,679 @@
-/* Variáveis de cor: declare uma vez em :root e use na folha toda. Mudar a cor
-   do site inteiro passa a ser mudar uma linha. */
-:root {
-  --cor-principal: #0e7490;
-  --cor-texto: #18181b;
+* {
+  box-sizing: border-box;
 }
 
-/* Seletor de TAG: vale para todo <body> da página. */
 body {
-  font-family: 'Segoe UI', Arial, sans-serif;
-  color: var(--cor-texto);
-  background-color: #fafafa;
-  padding: 24px;
+  background-color: #f0f0f0;
+  font-family: "Rubik", sans-serif;
+  margin: 0;
 }
 
-h1 {
-  color: var(--cor-principal);
+.header {
+  background-color: #ffffff;
+  padding: 10px 24px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
-/* Seletor de CLASSE: começa com ponto. Pega quem tem class="destaque". */
-.destaque {
-  background-color: rgba(14, 116, 144, 0.15);
-  padding: 12px;
-  border-left: 4px solid var(--cor-principal);
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-/* Seletor de ID: começa com cerquilha (#) e vale para UM elemento só.
-   Repare: o fundo aqui ganha do fundo da .destaque. É a cascata decidindo. */
-#aviso {
-  background-color: rgba(220, 38, 38, 0.15);
-  border-left-color: #dc2626;
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-/* Seletor DESCENDENTE: todo <a> que estiver DENTRO de um <nav>. */
-nav a {
-  color: var(--cor-texto);
+.logo img {
+  width: 50px;
+  height: auto;
+}
+
+.logo p{
+  margin: 0;
+  font-weight: 600;
+}
+
+.nav-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20px;
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-links a {
+  color: #333333;
   text-decoration: none;
-  margin-right: 16px;
+  font-weight: 500;
 }
 
-nav a:hover {
-  color: var(--cor-principal);
+.nav-links a:hover {
+  color: #4d77ff;
+}
+
+.menu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background-color: #ffffff;
+  cursor: pointer;
+}
+
+.menu-icon,
+.menu-icon::before,
+.menu-icon::after {
+  width: 22px;
+  height: 2px;
+  border-radius: 2px;
+  background-color: #333333;
+}
+
+.menu-icon {
+  position: relative;
+  transition: background-color 0.2s ease;
+}
+
+.menu-icon::before,
+.menu-icon::after {
+  position: absolute;
+  left: 0;
+  content: "";
+  transition: top 0.2s ease, transform 0.2s ease;
+}
+
+.menu-icon::before {
+  top: -7px;
+}
+
+.menu-icon::after {
+  top: 7px;
+}
+
+.menu-open .menu-icon {
+  background-color: transparent;
+}
+
+.menu-open .menu-icon::before {
+  top: 0;
+  transform: rotate(45deg);
+}
+
+.menu-open .menu-icon::after {
+  top: 0;
+  transform: rotate(-45deg);
+}
+
+.container {
+  box-sizing: border-box;
+  width: calc(100% - 32px);
+  max-width: 1120px;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin: 16px auto;
+  background-color: #ffffff;
+}
+
+#expense-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.form-group {
+  display: flex;
+  flex: 1 1 180px;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.form-group input,
+.form-group select {
+  box-sizing: border-box;
+  width: 100%;
+  height: 42px;
+  padding: 8px;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  font-family: inherit;
+}
+
+#expense-form button {
+  height: 42px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  background-color: #0c36c0;
+  color: #ffffff;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+}
+
+#expense-form button:hover {
+  background-color: #365fdb;
+}
+
+#activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px;
+  border-left: 4px solid #4d77ff;
+  border-radius: 4px;
+  background-color: #f7f8fc;
+}
+
+.activity-item-content {
+  flex: 1 1 260px;
+}
+
+.record-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.record-button {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  color: #ffffff;
+  cursor: pointer;
+  font: inherit;
+}
+
+.edit-button {
+  background-color: #0c36c0;
+}
+
+.delete-button {
+  background-color: #b42318;
+}
+
+.cancel-button {
+  background-color: #666666;
+}
+
+.record-button:disabled {
+  background-color: #999999;
+  cursor: not-allowed;
+}
+
+.inline-edit-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.inline-edit-form input,
+.inline-edit-form select {
+  box-sizing: border-box;
+  flex: 1 1 140px;
+  min-height: 38px;
+  padding: 6px 8px;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  font: inherit;
+}
+
+.container h1 {
+  margin: 0;
+  font-weight: 600;
+  color: #575454;
+}
+
+.grade-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 16px;
+  max-width: 760px;
+  margin-top: 20px;
+}
+
+.grade-controls select,
+.grade-table input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  font: inherit;
+}
+
+.grade-error {
+  display: block;
+  margin-top: 4px;
+  color: #b42318;
+  font-size: 0.875rem;
+}
+
+.grade-table-wrapper {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+.grade-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#grade-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+}
+
+#grade-table th,
+#grade-table td {
+  padding: 8px;
+  border-bottom: 1px solid #e2e2e2;
+  text-align: left;
+}
+
+#grade-table th:last-child,
+#grade-table td:last-child {
+  width: 110px;
+}
+
+#grade-table .grade-cell input {
+  width: 76px;
+  min-height: 36px;
+}
+
+#grade-table.grade-matrix {
+  width: max-content;
+  min-width: 100%;
+}
+
+#grade-table.grade-matrix th:nth-child(n + 2),
+#grade-table.grade-matrix td:nth-child(n + 2) {
+  min-width: 150px;
+}
+
+#grade-table.grade-matrix th:first-child,
+#grade-table.grade-matrix td:first-child {
+  position: sticky;
+  left: 0;
+  width: 180px;
+  min-width: 180px;
+  max-width: 180px;
+  background-color: #ffffff;
+}
+
+#grade-table.grade-matrix th:first-child {
+  z-index: 3;
+}
+
+#grade-table.grade-matrix td:first-child {
+  z-index: 2;
+}
+
+.grade-activity-title {
+  display: block;
+  margin-bottom: 4px;
+  overflow-wrap: anywhere;
+}
+
+#grade-table th small {
+  color: #64748b;
+  font-weight: 400;
+}
+
+#grade-message {
+  color: #575454;
+}
+
+#save-grades {
+  margin-top: 16px;
+}
+
+.student-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.student-form .form-group {
+  flex: 1 1 220px;
+}
+
+.student-form button {
+  min-height: 42px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  background-color: #0c36c0;
+  color: #ffffff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+
+.import-panel {
+  margin-top: 32px;
+  padding: 24px;
+  border: 1px solid #dce5f2;
+  border-radius: 10px;
+  background-color: #f8faff;
+}
+
+.import-panel h2 {
+  margin: 0 0 8px;
+  color: #23324a;
+}
+
+.import-panel > p:first-of-type {
+  margin-top: 0;
+  color: #5b6779;
+}
+
+.import-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  align-items: end;
+  gap: 16px;
+}
+
+.import-form .form-group {
+  min-width: 0;
+}
+
+.import-form input[type="file"] {
+  max-width: 100%;
+}
+
+.import-form button {
+  min-height: 42px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  background-color: #0c36c0;
+  color: #ffffff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+
+.import-status {
+  margin-bottom: 0;
+}
+
+.import-status.error {
+  color: #b42318;
+}
+
+.import-status.success {
+  color: #18794e;
+}
+
+.students-page {
+  box-sizing: border-box;
+  width: calc(100% - 32px);
+  max-width: 1120px;
+  margin: 28px auto;
+  padding: 32px;
+}
+
+.students-page > h2 {
+  margin: 32px 0 16px;
+  color: #303b4b;
+}
+
+.student-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  align-items: start;
+  gap: 20px;
+}
+
+.student-group {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background-color: #f8faff;
+  box-shadow: 0 3px 10px rgba(20, 42, 80, 0.06);
+}
+
+.student-group h2 {
+  margin: 0 0 14px;
+  color: #23324a;
+  font-size: 1.15rem;
+}
+
+.student-group ol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: student;
+}
+
+.student-group-large {
+  grid-column: 1 / -1;
+}
+
+.student-group-large ol {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 4px 24px;
+}
+
+.student-group li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 6px 0;
+  border-bottom: 1px solid #e8edf5;
+  counter-increment: student;
+}
+
+.student-group li::before {
+  content: counter(student) ".";
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.student-name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.student-group .record-actions {
+  flex-wrap: nowrap;
+}
+
+.student-group .record-button {
+  padding: 6px 9px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .header {
+    padding: 10px 14px;
+  }
+
+  .navbar {
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .menu-toggle {
+    display: inline-flex;
+  }
+
+  .nav-links {
+    display: none;
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding-top: 6px;
+    border-top: 1px solid #e8edf5;
+  }
+
+  .navbar.menu-open .nav-links {
+    display: flex;
+  }
+
+  .nav-links li + li {
+    border-top: 1px solid #f0f2f5;
+  }
+
+  .nav-links a {
+    display: block;
+    padding: 12px 4px;
+  }
+
+  .container {
+    width: calc(100% - 16px);
+    max-width: none;
+    padding: 18px;
+    margin: 8px auto;
+  }
+
+  #expense-form,
+  .student-form {
+    align-items: stretch;
+  }
+
+  #expense-form button,
+  .student-form button,
+  .import-form button,
+  #save-grades {
+    width: 100%;
+  }
+
+  .grade-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .grade-table-wrapper {
+    margin-right: -2px;
+  }
+
+  #grade-table th,
+  #grade-table td {
+    padding: 6px;
+  }
+
+  #grade-table.grade-matrix th:first-child,
+  #grade-table.grade-matrix td:first-child {
+    width: 132px;
+    min-width: 132px;
+    max-width: 132px;
+  }
+
+  #grade-table.grade-matrix th:nth-child(n + 2),
+  #grade-table.grade-matrix td:nth-child(n + 2) {
+    min-width: 126px;
+  }
+
+  #grade-table .grade-cell input {
+    width: 68px;
+    min-height: 36px;
+  }
+
+  .students-page {
+    width: calc(100% - 20px);
+    margin: 10px auto;
+    padding: 18px;
+  }
+
+  .import-panel {
+    padding: 16px;
+  }
+
+  .student-list {
+    grid-template-columns: 1fr;
+  }
+
+  .student-group-large {
+    grid-column: auto;
+  }
+
+  .student-group-large ol {
+    grid-template-columns: 1fr;
+  }
+
+  .student-group li {
+    flex-wrap: wrap;
+  }
+
+  .student-group .record-actions {
+    flex: 1 1 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .student-group .record-button {
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 380px) {
+  .header {
+    padding: 10px 12px;
+  }
+
+  .logo img {
+    width: 42px;
+  }
+
+  .nav-links {
+    gap: 0;
+  }
+
+  .container,
+  .students-page {
+    padding: 14px;
+  }
+
+  .students-page {
+    width: calc(100% - 12px);
+  }
+
+  .student-group {
+    padding: 14px;
+  }
 }

@@ -1,29 +1,79 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CSS: seletores e cascata</title>
+  <title>Adicionar atividade - Gaveta de Alunos</title>
+  <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap"
+    rel="stylesheet">
 </head>
+
 <body>
-
-  <nav>
-    <a href="#inicio">Início</a>
-    <a href="#sobre">Sobre</a>
-    <a href="#contato">Contato</a>
-  </nav>
-
-  <h1>Seletores de CSS</h1>
-
-  <p>Este parágrafo não tem classe: pega só o estilo do seletor body.</p>
-
-  <p class="destaque">Este tem class="destaque" e ganha fundo colorido.</p>
-
-  <p class="destaque" id="aviso">
-    Este tem a classe E o id="aviso". Os dois mandam no fundo — e o id vence,
-    porque tem mais peso na cascata.
-  </p>
-
+  <header class="header">
+    <nav class="navbar">
+      <div class="logo">
+        <img src="logo.png" alt="Logo">
+        <p>Gaveta de Alunos</p>
+      </div>
+      <button id="menu-toggle" class="menu-toggle" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="nav-links">
+        <span class="menu-icon" aria-hidden="true"></span>
+      </button>
+      <ul id="nav-links" class="nav-links">
+        <li><a href="index.html">Atividade</a></li>
+        <li><a href="alunos.html">Alunos</a></li>
+        <li><a href="notas.html">Gaveta de Notas</a></li>
+      </ul>
+    </nav>
+  </header>
+  
+  <section class="container">
+    <h1>Adicionar atividade</h1>
+    <form id="expense-form">
+      <div class="form-group">
+        <label for="description">Descrição:</label>
+        <input type="text" id="description" required>
+      </div>
+      <div class="form-group">
+        <label for="subject">Matéria:</label>
+        <select id="subject" required>
+          <option value="">Selecione a matéria</option>
+          <option value="Informática Aplicada">Informática Aplicada</option>
+          <option value="Redes de Computadores">Redes de Computadores</option>
+          <option value="Fundamentos de TI e Sistema Operacional">Fundamentos de TI e Sistema Operacional</option>
+          <option value="Desenvolvimento de Sistemas">Desenvolvimento de Sistemas</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="amount">Nota máxima:</label>
+        <input type="number" id="amount" min="0" step="any" required>
+      </div>
+      <div class="form-group">
+        <label for="activity-date">Data:</label>
+        <input type="date" id="activity-date" required>
+      </div>
+      <div class="form-group">
+        <label for="class">Turma:</label>
+        <select id="class" required>
+          <option value="">Selecione a turma</option>
+          <option value="1ADM1">1ADM1</option>
+          <option value="1ADM2">1ADM2</option>
+          <option value="1ADM3">1ADM3</option>
+          <option value="1MSI">1MSI</option>
+          <option value="2MSI">2MSI</option>
+          <option value="Senac">Senac</option>
+        </select>
+      </div>
+      <button type="submit">Adicionar Atividade</button>
+    </form>
+    <h2>Atividades adicionadas</h2>
+    <div id="activity-list"></div>
+  </section>
+  <script src="script.js"></script>
 </body>
+
 </html>
