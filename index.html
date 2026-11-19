@@ -4,75 +4,81 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Adicionar atividade - Gaveta de Alunos</title>
+  <title>Calendário Escolar - Gavetas</title>
   <link rel="icon" type="image/png" href="logo.png">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap"
-    rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300..900&display=swap" rel="stylesheet">
 </head>
 
 <body>
   <header class="header">
     <nav class="navbar">
-      <div class="logo">
+      <a class="logo" href="index.html" aria-label="Ir para o calendário escolar">
         <img src="logo.png" alt="Logo">
-        <p>Gaveta de Alunos</p>
-      </div>
+        <p>Gavetas</p>
+      </a>
       <button id="menu-toggle" class="menu-toggle" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="nav-links">
         <span class="menu-icon" aria-hidden="true"></span>
       </button>
       <ul id="nav-links" class="nav-links">
-        <li><a href="index.html">Atividade</a></li>
-        <li><a href="alunos.html">Alunos</a></li>
+        <li><a href="index.html">Calendário Escolar</a></li>
+        <li><a href="atividade.html">Gaveta de Atividades</a></li>
+        <li><a href="alunos.html">Gaveta de Alunos</a></li>
         <li><a href="notas.html">Gaveta de Notas</a></li>
+        <li><button id="logout-button" class="logout-button" type="button">Sair</button></li>
       </ul>
     </nav>
   </header>
-  
-  <section class="container">
-    <h1>Adicionar atividade</h1>
-    <form id="expense-form">
+
+  <main class="container calendar-page">
+    <h1>Calendário Escolar</h1>
+    <p class="calendar-intro">Organize provas, entregas, reuniões e outros compromissos da turma.</p>
+    <div class="calendar-toolbar">
+      <button id="previous-month" class="calendar-navigation" type="button" aria-label="Mês anterior">‹</button>
+      <h2 id="calendar-current-month"></h2>
+      <button id="next-month" class="calendar-navigation" type="button" aria-label="Próximo mês">›</button>
+    </div>
+    <div class="calendar-weekdays" aria-hidden="true">
+      <span>Domingo</span>
+      <span>Segunda</span>
+      <span>Terça</span>
+      <span>Quarta</span>
+      <span>Quinta</span>
+      <span>Sexta</span>
+      <span>Sábado</span>
+    </div>
+    <div id="calendar-month-grid" class="calendar-month-grid"></div>
+    <form id="calendar-form" class="calendar-form">
       <div class="form-group">
-        <label for="description">Descrição:</label>
-        <input type="text" id="description" required>
+        <label for="calendar-event">Evento:</label>
+        <input id="calendar-event" type="text" required>
       </div>
       <div class="form-group">
-        <label for="subject">Matéria:</label>
-        <select id="subject" required>
-          <option value="">Selecione a matéria</option>
-          <option value="Informática Aplicada">Informática Aplicada</option>
-          <option value="Redes de Computadores">Redes de Computadores</option>
-          <option value="Fundamentos de TI e Sistema Operacional">Fundamentos de TI e Sistema Operacional</option>
-          <option value="Desenvolvimento de Sistemas">Desenvolvimento de Sistemas</option>
+        <label for="calendar-date">Data:</label>
+        <input id="calendar-date" type="date" required>
+      </div>
+      <div class="form-group">
+        <label for="calendar-type">Tipo:</label>
+        <select id="calendar-type">
+          <option value="Evento escolar">Evento escolar</option>
+          <option value="Prova">Prova</option>
+          <option value="Entrega">Entrega</option>
+          <option value="Reunião">Reunião</option>
+          <option value="Feriado">Feriado</option>
+          <option value="Férias">Férias</option>
+          <option value="Recesso">Recesso</option>
+          <option value="Outro">Outro</option>
         </select>
       </div>
-      <div class="form-group">
-        <label for="amount">Nota máxima:</label>
-        <input type="number" id="amount" min="0" step="any" required>
-      </div>
-      <div class="form-group">
-        <label for="activity-date">Data:</label>
-        <input type="date" id="activity-date" required>
-      </div>
-      <div class="form-group">
-        <label for="class">Turma:</label>
-        <select id="class" required>
-          <option value="">Selecione a turma</option>
-          <option value="1ADM1">1ADM1</option>
-          <option value="1ADM2">1ADM2</option>
-          <option value="1ADM3">1ADM3</option>
-          <option value="1MSI">1MSI</option>
-          <option value="2MSI">2MSI</option>
-          <option value="Senac">Senac</option>
-        </select>
-      </div>
-      <button type="submit">Adicionar Atividade</button>
+      <button type="submit">Adicionar ao calendário</button>
     </form>
-    <h2>Atividades adicionadas</h2>
-    <div id="activity-list"></div>
-  </section>
+    <h2>Eventos cadastrados</h2>
+    <div id="calendar-list" class="calendar-list"></div>
+  </main>
+  <script src="auth.js"></script>
   <script src="script.js"></script>
 </body>
 

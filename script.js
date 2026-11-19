@@ -1,4 +1,8 @@
-const STORAGE_KEY = "gavetaDeAlunos";
+const STORAGE_KEY = window.currentProfessor && window.currentProfessor.role === "student"
+  ? window.currentProfessor.teacherKey
+  : window.currentProfessor
+    ? `gavetaDeAlunos-${window.currentProfessor.matricula}`
+  : "gavetaDeAlunos";
 const CLASS_NAMES = ["1ADM1", "1ADM2", "1ADM3", "1MSI", "2MSI", "Senac"];
 const SUBJECT_NAMES = [
   "Informática Aplicada",
@@ -26,12 +30,33 @@ const gradeTableBody = document.querySelector("#grade-table-body");
 const gradeMessage = document.querySelector("#grade-message");
 const gradeTable = document.querySelector("#grade-table");
 const saveGradesButton = document.querySelector("#save-grades");
+const calendarForm = document.querySelector("#calendar-form");
+const calendarList = document.querySelector("#calendar-list");
+const calendarMonthGrid = document.querySelector("#calendar-month-grid");
+const calendarCurrentMonth = document.querySelector("#calendar-current-month");
+const previousMonthButton = document.querySelector("#previous-month");
+const nextMonthButton = document.querySelector("#next-month");
+const studentGradeTable = document.querySelector("#student-grade-table");
+const studentGradeMessage = document.querySelector("#student-grade-message");
+const reportForm = document.querySelector("#report-form");
+const reportClassSelect = document.querySelector("#report-class");
+const reportSubjectSelect = document.querySelector("#report-subject");
+const reportTeacherInput = document.querySelector("#report-teacher");
+const reportStatus = document.querySelector("#report-status");
+const reportPreview = document.querySelector("#report-preview");
+const reportActions = document.querySelector("#report-actions");
+const exportXlsxButton = document.querySelector("#export-xlsx");
+const exportCsvButton = document.querySelector("#export-csv");
+const exportJsonButton = document.querySelector("#export-json");
+const printReportButton = document.querySelector("#print-report");
 const menuToggle = document.querySelector("#menu-toggle");
 const navbar = document.querySelector(".navbar");
 let notasDaTela = [];
 let ultimaVisualizacao = "activity";
 let ultimaAtividade = "";
 let ultimaTurma = "";
+let relatorioAtual = null;
+let mesDoCalendario = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
 if (menuToggle && navbar) {
   const fecharMenu = () => {
@@ -69,8 +94,8 @@ function carregarBanco() {
   const alunosAntigos = Array.isArray(bancoSalvo.students) ? bancoSalvo.students : [];
   const alunosMigrados = alunosAntigos.map((aluno, indice) => (
     typeof aluno === "string"
-      ? { id: `aluno-antigo-${indice + 1}`, name: aluno, className: "" }
-      : aluno
+      ? { id: `aluno-antigo-${indice + 1}`, name: aluno, className: "", matricula: "" }
+      : { ...aluno, matricula: aluno.matricula || "" }
   ));
   const notasAntigas = bancoSalvo.grades && typeof bancoSalvo.grades === "object"
     ? bancoSalvo.grades
@@ -93,14 +118,208 @@ function carregarBanco() {
   return {
     activities: Array.isArray(bancoSalvo.activities) ? bancoSalvo.activities : [],
     students: alunosMigrados,
-    grades: notasMigradas
+    grades: notasMigradas,
+    calendarEvents: Array.isArray(bancoSalvo.calendarEvents) ? bancoSalvo.calendarEvents : []
   };
 }
 
 const bancoDeAtividades = carregarBanco();
+const matriculasExistentes = new Set(
+  bancoDeAtividades.students.map((student) => student.matricula).filter(Boolean)
+);
+
+function gerarMatriculaAluno() {
+  let matricula;
+  do {
+    matricula = String(Math.floor(10000000 + Math.random() * 90000000));
+  } while (matriculasExistentes.has(matricula));
+  matriculasExistentes.add(matricula);
+  return matricula;
+}
+
+bancoDeAtividades.students.forEach((student) => {
+  if (!student.matricula) student.matricula = gerarMatriculaAluno();
+});
+localStorage.setItem(STORAGE_KEY, JSON.stringify(bancoDeAtividades));
 
 function salvarBanco() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(bancoDeAtividades));
+}
+
+function preencherSelecaoRelatorio(select, valores, textoInicial) {
+  select.replaceChildren();
+  const initialOption = document.createElement("option");
+  initialOption.value = "";
+  initialOption.textContent = textoInicial;
+  select.appendChild(initialOption);
+  valores.forEach((valor) => {
+    const option = document.createElement("option");
+    option.value = valor;
+    option.textContent = valor;
+    select.appendChild(option);
+  });
+}
+
+function escaparHtml(valor) {
+  return String(valor)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function formatarNomeArquivo(valor) {
+  return String(valor)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .toLowerCase();
+}
+
+function baixarArquivo(conteudo, nome, tipo) {
+  const blob = new Blob([conteudo], { type: tipo });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = nome;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function construirRelatorio() {
+  const turma = reportClassSelect.value;
+  const materia = reportSubjectSelect.value;
+  const professor = reportTeacherInput.value.trim();
+  const atividades = bancoDeAtividades.activities.filter(
+    (atividade) => atividade.className === turma && atividade.subject === materia
+  );
+  const alunos = bancoDeAtividades.students
+    .filter((aluno) => aluno.className === turma)
+    .sort((first, second) => (first.name || "").localeCompare(second.name || "", "pt-BR"));
+
+  if (!turma || !materia) throw new Error("Selecione a turma e a matéria.");
+  if (atividades.length === 0) throw new Error("Não há atividades dessa matéria para a turma selecionada.");
+  if (alunos.length === 0) throw new Error("Não há alunos cadastrados nessa turma.");
+
+  return {
+    header: {
+      titulo: "Relatório de notas",
+      turma,
+      materia,
+      professor,
+      geradoEm: new Date().toLocaleString("pt-BR")
+    },
+    activities: atividades,
+    students: alunos
+  };
+}
+
+function renderizarRelatorio(relatorio) {
+  const cabecalhoProfessor = relatorio.header.professor
+    ? `<div><strong>Professor(a):</strong> ${escaparHtml(relatorio.header.professor)}</div>`
+    : "";
+  const linhas = relatorio.students.map((aluno) => {
+    const celulas = relatorio.activities.map((atividade) => {
+      const nota = (bancoDeAtividades.grades[atividade.id] || {})[aluno.id] ?? "";
+      return `<td>${escaparHtml(nota)}</td>`;
+    }).join("");
+    return `<tr><td>${escaparHtml(aluno.name)}</td>${celulas}</tr>`;
+  }).join("");
+  const colunas = relatorio.activities.map((atividade) =>
+    `<th>${escaparHtml(atividade.description)}<br><small>Máx. ${escaparHtml(atividade.maxGrade)}</small></th>`
+  ).join("");
+
+  reportPreview.innerHTML = `
+    <table>
+      <thead>
+        <tr><th class="report-table-header" colspan="${relatorio.activities.length + 1}">
+          ${escaparHtml(relatorio.header.titulo)} — Turma: ${escaparHtml(relatorio.header.turma)} — Matéria: ${escaparHtml(relatorio.header.materia)}
+          ${cabecalhoProfessor}
+        </th></tr>
+        <tr><th>Aluno</th>${colunas}</tr>
+      </thead>
+      <tbody>${linhas}</tbody>
+    </table>
+  `;
+  reportPreview.hidden = false;
+  reportActions.hidden = false;
+}
+
+function linhasDoRelatorio(relatorio) {
+  const linhas = [
+    ["RELATÓRIO DE NOTAS"],
+    ["Turma", relatorio.header.turma],
+    ["Matéria", relatorio.header.materia],
+    ["Professor(a)", relatorio.header.professor],
+    ["Gerado em", relatorio.header.geradoEm],
+    [],
+    ["Aluno", ...relatorio.activities.map((atividade) => `${atividade.description} (máx. ${atividade.maxGrade})`)]
+  ];
+  relatorio.students.forEach((aluno) => {
+    linhas.push([
+      aluno.name,
+      ...relatorio.activities.map((atividade) =>
+        (bancoDeAtividades.grades[atividade.id] || {})[aluno.id] ?? ""
+      )
+    ]);
+  });
+  return linhas;
+}
+
+function exportarRelatorioXlsx() {
+  if (!relatorioAtual || typeof XLSX === "undefined") {
+    reportStatus.textContent = "O leitor de Excel não carregou. Verifique a conexão e tente novamente.";
+    reportStatus.className = "report-status error";
+    return;
+  }
+  const worksheet = XLSX.utils.aoa_to_sheet(linhasDoRelatorio(relatorioAtual));
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Relatório");
+  XLSX.writeFile(workbook, `relatorio-${formatarNomeArquivo(relatorioAtual.header.turma)}-${formatarNomeArquivo(relatorioAtual.header.materia)}.xlsx`);
+}
+
+function exportarRelatorioCsv() {
+  if (!relatorioAtual) return;
+  const csv = linhasDoRelatorio(relatorioAtual)
+    .map((linha) => linha.map((celula) => `"${String(celula).replace(/"/g, '""')}"`).join(";"))
+    .join("\r\n");
+  baixarArquivo(
+    `\uFEFF${csv}`,
+    `relatorio-${formatarNomeArquivo(relatorioAtual.header.turma)}.csv`,
+    "text/csv;charset=utf-8"
+  );
+}
+
+function exportarRelatorioJson() {
+  if (!relatorioAtual) return;
+  baixarArquivo(
+    JSON.stringify({
+      ...relatorioAtual.header,
+      registros: linhasDoRelatorio(relatorioAtual).slice(6)
+    }, null, 2),
+    `relatorio-${formatarNomeArquivo(relatorioAtual.header.turma)}.json`,
+    "application/json;charset=utf-8"
+  );
+}
+
+function imprimirRelatorio() {
+  if (!relatorioAtual) return;
+  const janela = window.open("", "_blank");
+  if (!janela) {
+    reportStatus.textContent = "Não foi possível abrir a impressão. Verifique o bloqueador de pop-ups.";
+    reportStatus.className = "report-status error";
+    return;
+  }
+  janela.document.write(`
+    <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${escaparHtml(relatorioAtual.header.titulo)}</title>
+    <style>body{font-family:Arial,sans-serif;padding:24px}h1{font-size:20px}table{width:100%;border-collapse:collapse;margin-top:18px}th,td{border:1px solid #999;padding:7px;text-align:left}th{background:#eef3ff}</style>
+    </head><body><h1>${escaparHtml(relatorioAtual.header.titulo)}</h1>${reportPreview.innerHTML}</body></html>
+  `);
+  janela.document.close();
+  janela.focus();
+  janela.print();
 }
 
 function criarBotaoAcao(texto, classe, acao) {
@@ -345,7 +564,7 @@ function renderizarAlunos() {
         const item = document.createElement("li");
         const name = document.createElement("span");
         name.className = "student-name";
-        name.textContent = student.name;
+        name.textContent = `${student.name} — Matrícula: ${student.matricula}`;
         const actions = document.createElement("div");
         actions.className = "record-actions";
         actions.append(
@@ -444,7 +663,8 @@ if (studentForm) {
     bancoDeAtividades.students.push({
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       name: studentName,
-      className
+      className,
+      matricula: gerarMatriculaAluno()
     });
     studentNameInput.setCustomValidity("");
     salvarBanco();
@@ -953,3 +1173,216 @@ if (gradeActivitySelect) {
   });
   renderizarAtividadesParaNotas();
 }
+
+if (reportForm) {
+  preencherSelecaoRelatorio(reportClassSelect, CLASS_NAMES, "Selecione a turma");
+  preencherSelecaoRelatorio(reportSubjectSelect, SUBJECT_NAMES, "Selecione a matéria");
+
+  reportForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    try {
+      relatorioAtual = construirRelatorio();
+      renderizarRelatorio(relatorioAtual);
+      reportStatus.textContent = "Relatório montado. Escolha como deseja guardá-lo.";
+      reportStatus.className = "report-status";
+    } catch (error) {
+      relatorioAtual = null;
+      reportPreview.hidden = true;
+      reportActions.hidden = true;
+      reportStatus.textContent = error instanceof Error
+        ? error.message
+        : "Não foi possível montar o relatório.";
+      reportStatus.className = "report-status error";
+    }
+  });
+
+  exportXlsxButton.addEventListener("click", exportarRelatorioXlsx);
+  exportCsvButton.addEventListener("click", exportarRelatorioCsv);
+  exportJsonButton.addEventListener("click", exportarRelatorioJson);
+  printReportButton.addEventListener("click", imprimirRelatorio);
+}
+
+function renderizarCalendario() {
+  if (!calendarList) return;
+  calendarList.replaceChildren();
+  const eventos = [...bancoDeAtividades.calendarEvents].sort((first, second) =>
+    first.date.localeCompare(second.date)
+  );
+  const atividades = [...bancoDeAtividades.activities]
+    .filter((atividade) => atividade.date)
+    .sort((first, second) => first.date.localeCompare(second.date));
+  const mesAtual = `${mesDoCalendario.getFullYear()}-${String(mesDoCalendario.getMonth() + 1).padStart(2, "0")}`;
+  const eventosDoMes = eventos.filter((evento) => evento.date.startsWith(mesAtual));
+  const atividadesDoMes = atividades.filter((atividade) => atividade.date.startsWith(mesAtual));
+  if (eventosDoMes.length === 0 && atividadesDoMes.length === 0) {
+    calendarList.textContent = "Nenhum evento ou atividade cadastrado.";
+  } else {
+    eventosDoMes.forEach((evento) => {
+      const item = document.createElement("div");
+      item.className = "calendar-event";
+      const details = document.createElement("div");
+      const title = document.createElement("strong");
+      title.textContent = evento.title;
+      const date = document.createElement("span");
+      date.textContent = `${formatarData(evento.date)} — ${evento.type}`;
+      details.append(title, date);
+      item.append(details, criarBotaoAcao("Excluir", "delete-button", () => {
+        bancoDeAtividades.calendarEvents = bancoDeAtividades.calendarEvents.filter(
+          (currentEvent) => currentEvent.id !== evento.id
+        );
+        salvarBanco();
+        renderizarCalendario();
+      }));
+      calendarList.appendChild(item);
+    });
+    atividadesDoMes.forEach((atividade) => {
+      const item = document.createElement("div");
+      item.className = "calendar-event";
+      const details = document.createElement("div");
+      const title = document.createElement("strong");
+      title.textContent = atividade.description;
+      const date = document.createElement("span");
+      date.textContent = `${formatarData(atividade.date)} — Atividade de ${atividade.subject}`;
+      details.append(title, date);
+      item.append(details, criarBotaoAcao("Abrir atividade", "edit-button", () => {
+        window.location.href = "atividade.html";
+      }));
+      calendarList.appendChild(item);
+    });
+  }
+  renderizarMesCalendario();
+}
+
+function dataISO(ano, mes, dia) {
+  return `${ano}-${String(mes + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+}
+
+function renderizarMesCalendario() {
+  if (!calendarMonthGrid) return;
+  calendarMonthGrid.replaceChildren();
+  const ano = mesDoCalendario.getFullYear();
+  const mes = mesDoCalendario.getMonth();
+  calendarCurrentMonth.textContent = mesDoCalendario.toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric"
+  });
+  const primeiroDia = new Date(ano, mes, 1).getDay();
+  const quantidadeDeDias = new Date(ano, mes + 1, 0).getDate();
+  const itens = [
+    ...bancoDeAtividades.calendarEvents.map((evento) => ({
+      date: evento.date,
+      label: evento.title,
+      type: evento.type,
+      kind: "event"
+    })),
+    ...bancoDeAtividades.activities.map((atividade) => ({
+      date: atividade.date,
+      label: atividade.description,
+      type: atividade.subject || "Atividade",
+      kind: "activity"
+    }))
+  ];
+
+  for (let indice = 0; indice < primeiroDia; indice += 1) {
+    const vazio = document.createElement("div");
+    vazio.className = "calendar-day calendar-day-empty";
+    calendarMonthGrid.appendChild(vazio);
+  }
+
+  for (let dia = 1; dia <= quantidadeDeDias; dia += 1) {
+    const data = dataISO(ano, mes, dia);
+    const celula = document.createElement("div");
+    celula.className = "calendar-day";
+    const numero = document.createElement("span");
+    numero.className = "calendar-day-number";
+    numero.textContent = String(dia);
+    celula.appendChild(numero);
+    itens.filter((item) => item.date === data).forEach((item) => {
+      const evento = document.createElement(item.kind === "activity" ? "button" : "div");
+      evento.className = "calendar-day-event";
+      evento.title = `${item.type}: ${item.label}`;
+      evento.textContent = item.label;
+      if (item.kind === "activity") {
+        evento.type = "button";
+        evento.setAttribute("aria-label", `Abrir atividade ${item.label}`);
+        evento.addEventListener("click", () => {
+          window.location.href = "atividade.html";
+        });
+      }
+      celula.appendChild(evento);
+    });
+    calendarMonthGrid.appendChild(celula);
+  }
+}
+
+if (calendarForm) {
+  calendarForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const titleInput = document.querySelector("#calendar-event");
+    const dateInput = document.querySelector("#calendar-date");
+    const typeInput = document.querySelector("#calendar-type");
+    bancoDeAtividades.calendarEvents.push({
+      id: criarId(),
+      title: titleInput.value.trim(),
+      date: dateInput.value,
+      type: typeInput.value
+    });
+    salvarBanco();
+    calendarForm.reset();
+    renderizarCalendario();
+  });
+  renderizarCalendario();
+  previousMonthButton.addEventListener("click", () => {
+    mesDoCalendario = new Date(mesDoCalendario.getFullYear(), mesDoCalendario.getMonth() - 1, 1);
+    renderizarCalendario();
+  });
+  nextMonthButton.addEventListener("click", () => {
+    mesDoCalendario = new Date(mesDoCalendario.getFullYear(), mesDoCalendario.getMonth() + 1, 1);
+    renderizarCalendario();
+  });
+}
+
+function renderizarNotasDoAluno() {
+  if (!studentGradeTable || !window.currentProfessor) return;
+  const student = bancoDeAtividades.students.find(
+    (item) => item.id === window.currentProfessor.studentId
+  );
+  if (!student) {
+    studentGradeMessage.textContent = "Seu cadastro de aluno não foi encontrado.";
+    return;
+  }
+
+  const activities = bancoDeAtividades.activities
+    .filter((activity) => activity.className === student.className)
+    .sort((first, second) => first.date.localeCompare(second.date));
+  studentGradeMessage.textContent = `${student.name} — Turma: ${student.className}`;
+  if (activities.length === 0) {
+    studentGradeMessage.textContent += " — Nenhuma atividade cadastrada.";
+    return;
+  }
+
+  const header = studentGradeTable.querySelector("thead");
+  const body = studentGradeTable.querySelector("tbody");
+  const headerRow = document.createElement("tr");
+  ["Matéria", "Atividade", "Data", "Nota máxima", "Minha nota"].forEach((label) => {
+    const cell = document.createElement("th");
+    cell.textContent = label;
+    headerRow.appendChild(cell);
+  });
+  header.appendChild(headerRow);
+
+  activities.forEach((activity) => {
+    const row = document.createElement("tr");
+    const grade = (bancoDeAtividades.grades[activity.id] || {})[student.id] ?? "Ainda não lançada";
+    [activity.subject, activity.description, formatarData(activity.date), activity.maxGrade, grade]
+      .forEach((value) => {
+        const cell = document.createElement("td");
+        cell.textContent = value;
+        row.appendChild(cell);
+      });
+    body.appendChild(row);
+  });
+  studentGradeTable.hidden = false;
+}
+
+if (studentGradeTable) renderizarNotasDoAluno();
