@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gaveta de Notas</title>
+  <link rel="icon" type="image/png" href="img/logo.png">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap"
+    rel="stylesheet">
+</head>
+
+<body>
+  <header class="header">
+    <nav class="navbar">
+      <a class="logo" href="index.html" aria-label="Ir para o calendário escolar">
+        <img src="img/logo.png" alt="Logo">
+        <p>Gavetas</p>
+      </a>
+      <button id="menu-toggle" class="menu-toggle" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="nav-links">
+        <span class="menu-icon" aria-hidden="true"></span>
+      </button>
+      <ul id="nav-links" class="nav-links">
+        <li><a href="index.html">Calendário Escolar</a></li>
+        <li><a href="atividade.html">Gaveta de Atividades</a></li>
+        <li><a href="alunos.html">Gaveta de Alunos</a></li>
+        <li><a href="notas.html">Gaveta de Notas</a></li>
+        <li><button id="logout-button" class="logout-button" type="button">Sair</button></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <h1>Notas dos alunos</h1>
+    <div class="grade-controls">
+      <div class="form-group">
+        <label for="grade-view-mode">Visualização:</label>
+        <select id="grade-view-mode">
+          <option value="activity">Uma atividade</option>
+          <option value="class">Todas as atividades da turma</option>
+        </select>
+      </div>
+      <div class="form-group" id="grade-activity-control">
+        <label for="grade-activity">Atividade:</label>
+        <select id="grade-activity"></select>
+      </div>
+      <div class="form-group" id="grade-class-control" hidden>
+        <label for="grade-class">Turma:</label>
+        <select id="grade-class"></select>
+      </div>
+    </div>
+    <p id="grade-message" aria-live="polite"></p>
+    <div class="grade-table-wrapper">
+      <table id="grade-table" hidden>
+        <thead id="grade-table-head"></thead>
+        <tbody id="grade-table-body"></tbody>
+      </table>
+    </div>
+    <button id="save-grades" class="record-button edit-button" type="button" hidden>Salvar notas</button>
+
+    <section class="report-panel" aria-labelledby="report-title">
+      <div class="report-heading">
+        <div>
+          <span class="report-kicker">Banco de dados local</span>
+          <h2 id="report-title">Gerar relatório</h2>
+        </div>
+        <span class="report-storage-badge">Salvo neste navegador</span>
+      </div>
+      <p class="report-description">
+        Crie um relatório com cabeçalho pronto contendo turma e matéria. Escolha um formato para guardar ou compartilhar.
+      </p>
+      <form id="report-form" class="report-form">
+        <div class="form-group">
+          <label for="report-class">Turma do relatório:</label>
+          <select id="report-class" required></select>
+        </div>
+        <div class="form-group">
+          <label for="report-subject">Matéria do relatório:</label>
+          <select id="report-subject" required></select>
+        </div>
+        <div class="form-group">
+          <label for="report-teacher">Professor(a) (opcional):</label>
+          <input id="report-teacher" type="text" maxlength="120" placeholder="Nome do professor">
+        </div>
+        <button class="report-primary-button" type="submit">Montar relatório</button>
+      </form>
+      <p id="report-status" class="report-status" aria-live="polite"></p>
+      <div id="report-preview" class="report-preview" hidden></div>
+      <div id="report-actions" class="report-actions" hidden>
+        <button id="export-xlsx" class="record-button edit-button" type="button">Baixar Excel</button>
+        <button id="export-csv" class="record-button secondary-button" type="button">Baixar CSV</button>
+        <button id="export-json" class="record-button secondary-button" type="button">Baixar JSON</button>
+        <button id="print-report" class="record-button secondary-button" type="button">Imprimir / PDF</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/script.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Gavetas</title>
+  <link rel="icon" type="image/png" href="img/logo.png">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300..900&display=swap" rel="stylesheet">
+</head>
+
+<body class="auth-page" data-auth-page="login">
+  <main class="auth-card">
+    <a class="auth-logo" href="login.html" aria-label="Página inicial de login">
+      <img src="img/logo.png" alt="Logo">
+      <span>Gavetas</span>
+    </a>
+    <h1>Acesso do professor</h1>
+    <p class="auth-intro">Entre para organizar atividades, alunos e notas.</p>
+
+    <div class="auth-tabs" role="tablist">
+      <button class="auth-tab active" type="button" data-form="login-form">Entrar</button>
+      <button class="auth-tab" type="button" data-form="register-form">Cadastrar</button>
+    </div>
+
+    <p id="auth-message" class="auth-message" aria-live="polite"></p>
+
+    <form id="login-form" class="auth-form active">
+      <label for="login-role">Entrar como:</label>
+      <select id="login-role" required>
+        <option value="" selected disabled>Selecionar</option>
+        <option value="teacher">Professor</option>
+        <option value="student">Aluno</option>
+      </select>
+      <label for="login-matricula">Número de matrícula</label>
+      <input id="login-matricula" type="text" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" required>
+      <label for="login-password">Senha</label>
+      <input id="login-password" type="password" minlength="6" required>
+      <button class="auth-submit" type="submit">Entrar</button>
+      <a id="forgot-password-link" class="forgot-password-link" href="#forgot-form">Esqueci a senha</a>
+    </form>
+
+    <form id="register-form" class="auth-form">
+      <label for="register-role">Cadastrar como:</label>
+      <select id="register-role" required>
+        <option value="" selected disabled>Selecionar</option>
+        <option value="teacher">Professor</option>
+        <option value="student">Aluno</option>
+      </select>
+      <div id="student-registration-fields" hidden>
+        <label for="register-student-matricula">Matrícula do aluno</label>
+        <input id="register-student-matricula" type="text" inputmode="numeric" maxlength="8">
+      </div>
+      <label for="register-email">E-mail</label>
+      <input id="register-email" type="email" required>
+      <label for="register-name">Nome</label>
+      <input id="register-name" type="text" required>
+      <label for="register-password">Senha</label>
+      <input id="register-password" type="password" minlength="6" required>
+      <button class="auth-submit" type="submit">Criar cadastro</button>
+      <p id="registration-result" class="registration-result" hidden></p>
+    </form>
+
+    <form id="forgot-form" class="auth-form">
+      <label for="forgot-email">E-mail cadastrado</label>
+      <input id="forgot-email" type="email" required>
+      <label for="forgot-password">Nova senha</label>
+      <input id="forgot-password" type="password" minlength="6" required>
+      <button class="auth-submit" type="submit">Restaurar senha</button>
+      <small>Esta versão local restaura a senha diretamente neste navegador.</small>
+      <a id="back-to-login" class="forgot-password-link" href="#login-form">Voltar para entrar</a>
+    </form>
+  </main>
+  <script src="js/auth.js"></script>
+</body>
+
+</html>

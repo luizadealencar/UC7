@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gaveta de Alunos</title>
+  <link rel="icon" type="image/png" href="img/logo.png">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap"
+    rel="stylesheet">
+</head>
+
+<body>
+  <header class="header">
+    <nav class="navbar">
+      <a class="logo" href="index.html" aria-label="Ir para o calendário escolar">
+        <img src="img/logo.png" alt="Logo">
+        <p>Gavetas</p>
+      </a>
+      <button id="menu-toggle" class="menu-toggle" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="nav-links">
+        <span class="menu-icon" aria-hidden="true"></span>
+      </button>
+      <ul id="nav-links" class="nav-links">
+        <li><a href="index.html">Calendário Escolar</a></li>
+        <li><a href="atividade.html">Gaveta de Atividades</a></li>
+        <li><a href="alunos.html">Gaveta de Alunos</a></li>
+        <li><a href="notas.html">Gaveta de Notas</a></li>
+        <li><button id="logout-button" class="logout-button" type="button">Sair</button></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container students-page">
+    <h1>Cadastrar alunos</h1>
+    <form id="student-form" class="student-form">
+      <div class="form-group">
+        <label for="student-name">Nome do aluno:</label>
+        <input type="text" id="student-name" required>
+      </div>
+      <div class="form-group">
+        <label for="student-class">Turma:</label>
+        <select id="student-class" required>
+          <option value="">Selecione a turma</option>
+          <option value="1ADM1">1ADM1</option>
+          <option value="1ADM2">1ADM2</option>
+          <option value="1ADM3">1ADM3</option>
+          <option value="1MSI">1MSI</option>
+          <option value="2MSI">2MSI</option>
+          <option value="Senac">Senac</option>
+        </select>
+      </div>
+      <button type="submit">Adicionar aluno</button>
+    </form>
+
+    <section class="import-panel">
+      <h2>Importar alunos, atividades e notas</h2>
+      <p>Selecione uma turma e matéria. A primeira aba deve ter os nomes dos alunos na primeira coluna e as atividades no cabeçalho.</p>
+      <form id="xlsx-import-form" class="import-form">
+        <div class="form-group">
+          <label for="import-class">Turma da planilha:</label>
+          <select id="import-class" required>
+            <option value="">Selecione a turma</option>
+            <option value="1ADM1">1ADM1</option>
+            <option value="1ADM2">1ADM2</option>
+            <option value="1ADM3">1ADM3</option>
+            <option value="1MSI">1MSI</option>
+            <option value="2MSI">2MSI</option>
+            <option value="Senac">Senac</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="import-subject">Matéria das atividades:</label>
+          <select id="import-subject" required>
+            <option value="">Selecione a matéria</option>
+            <option value="Informática Aplicada">Informática Aplicada</option>
+            <option value="Redes de Computadores">Redes de Computadores</option>
+            <option value="Fundamentos de TI e Sistema Operacional">Fundamentos de TI e Sistema Operacional</option>
+            <option value="Desenvolvimento de Sistemas">Desenvolvimento de Sistemas</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="xlsx-file">Arquivo Excel (.xlsx):</label>
+          <input id="xlsx-file" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required>
+        </div>
+        <button type="submit">Importar planilha</button>
+      </form>
+      <p id="xlsx-import-status" class="import-status" aria-live="polite"></p>
+    </section>
+
+    <h2>Alunos cadastrados por turma</h2>
+    <div id="student-list" class="student-list"></div>
+  </main>
+
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/script.js"></script>
+</body>
+
+</html>
