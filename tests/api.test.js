@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { newDb } from "pg-mem";
 import { createApp } from "../server.js";
+import { resolve } from "node:path";
 
 async function postJson(baseUrl, route, payload, cookie) {
   const headers = { "Content-Type": "application/json" };
@@ -16,20 +16,22 @@ async function postJson(baseUrl, route, payload, cookie) {
   return { response, body: await response.json() };
 }
 
-test("stores teacher data in SQLite and limits student access", async (t) => {
-  const directory = await mkdtemp(join(tmpdir(), "gavetas-api-"));
-  const databasePath = join(directory, "test.sqlite");
-  let application = createApp({ databasePath });
+test("persists teacher data and limits student access", async (t) => {
+  const memoryDatabase = newDb();
+  const { Pool } = memoryDatabase.adapters.createPg();
+  const pool = new Pool();
+  const schema = await readFile(resolve("supabase", "schema.sql"), "utf8");
+  await pool.query(schema.replace(/^ALTER TABLE .* ENABLE ROW LEVEL SECURITY;\r?\n/gm, ""));
+  const application = await createApp({ pool, initializeSchema: false });
   let server = application.app.listen(0, "127.0.0.1");
   await new Promise((resolve) => server.once("listening", resolve));
-  let baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
 
   t.after(async () => {
     await new Promise((resolve, reject) => {
       server.close((error) => error ? reject(error) : resolve());
     });
-    application.close();
-    await rm(directory, { recursive: true, force: true });
+    await application.close();
   });
 
   const teacherRegistration = await postJson(baseUrl, "/api/auth/register", {
@@ -115,15 +117,6 @@ test("stores teacher data in SQLite and limits student access", async (t) => {
     body: JSON.stringify({ revision: 1, data: schoolData })
   });
   assert.equal(forbiddenSave.status, 403);
-
-  await new Promise((resolve, reject) => {
-    server.close((error) => error ? reject(error) : resolve());
-  });
-  application.close();
-  application = createApp({ databasePath });
-  server = application.app.listen(0, "127.0.0.1");
-  await new Promise((resolve) => server.once("listening", resolve));
-  baseUrl = `http://127.0.0.1:${server.address().port}`;
 
   const persistedDataResponse = await fetch(`${baseUrl}/api/data`, {
     headers: { Cookie: teacherCookie }

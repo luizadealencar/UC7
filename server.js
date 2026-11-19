@@ -1,13 +1,14 @@
 import { createHash, randomBytes, randomInt, scryptSync, timingSafeEqual } from "node:crypto";
-import { mkdirSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { readFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import Database from "better-sqlite3";
+import pg from "pg";
 import express from "express";
 
+const { Pool } = pg;
 const projectDirectory = dirname(fileURLToPath(import.meta.url));
-const defaultDatabasePath = process.env.DB_PATH || join(projectDirectory, "data", "gavetas.sqlite");
-const defaultStaticDirectory = join(projectDirectory, "dist");
+const schemaPath = resolve(projectDirectory, "supabase", "schema.sql");
+const defaultStaticDirectory = resolve(projectDirectory, "dist");
 const SESSION_COOKIE = "gavetas_session";
 const SESSION_DURATION_SECONDS = 7 * 24 * 60 * 60;
 const EMPTY_TEACHER_DATA = {
@@ -42,11 +43,21 @@ function verifyPassword(password, storedHash) {
   return actualHash.length === expected.length && timingSafeEqual(actualHash, expected);
 }
 
+function hashPayload(payload) {
+  if (typeof payload === "string") return JSON.parse(payload);
+  return payload;
+}
+
 function getCookie(request, name) {
-  const cookies = request.headers.cookie || "";
-  const pair = cookies.split(";").map((part) => part.trim())
+  const pair = (request.headers.cookie || "").split(";")
+    .map((part) => part.trim())
     .find((part) => part.startsWith(`${name}=`));
-  return pair ? decodeURIComponent(pair.slice(name.length + 1)) : "";
+  if (!pair) return "";
+  try {
+    return decodeURIComponent(pair.slice(name.length + 1));
+  } catch {
+    return "";
+  }
 }
 
 function publicUser(user) {
@@ -59,12 +70,11 @@ function publicUser(user) {
   };
 }
 
-function createMatricula(database) {
+async function createMatricula(queryable) {
   for (let attempt = 0; attempt < 100; attempt += 1) {
     const matricula = String(randomInt(10000000, 100000000));
-    if (!database.prepare("SELECT 1 FROM users WHERE matricula = ?").get(matricula)) {
-      return matricula;
-    }
+    const result = await queryable.query("SELECT 1 FROM public.users WHERE matricula = $1", [matricula]);
+    if (result.rowCount === 0) return matricula;
   }
   throw new HttpError(503, "Não foi possível gerar uma matrícula. Tente novamente.");
 }
@@ -79,60 +89,67 @@ function validateTeacherData(value) {
     && !Array.isArray(value.grades);
 }
 
-export function createApp({
-  databasePath = defaultDatabasePath,
-  staticDirectory = null
+async function executeTransaction(pool, callback) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await callback(client);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function createApp({
+  pool: suppliedPool,
+  databaseUrl = process.env.DATABASE_URL,
+  staticDirectory = null,
+  initializeSchema = true
 } = {}) {
-  mkdirSync(dirname(databasePath), { recursive: true });
-  const database = new Database(databasePath);
-  database.pragma("journal_mode = WAL");
-  database.pragma("foreign_keys = ON");
-  database.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY,
-      email TEXT NOT NULL UNIQUE,
-      name TEXT NOT NULL,
-      matricula TEXT NOT NULL UNIQUE,
-      role TEXT NOT NULL CHECK (role IN ('teacher', 'student')),
-      password_hash TEXT NOT NULL,
-      recovery_hash TEXT NOT NULL,
-      teacher_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-      student_id TEXT,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS teacher_data (
-      teacher_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-      payload TEXT NOT NULL,
-      revision INTEGER NOT NULL DEFAULT 0,
-      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS sessions (
-      token_hash TEXT PRIMARY KEY,
-      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      expires_at INTEGER NOT NULL
-    );
-  `);
+  if (!suppliedPool && !databaseUrl) {
+    throw new Error("Configure DATABASE_URL no arquivo .env com a conexão PostgreSQL do Supabase.");
+  }
+
+  const pool = suppliedPool || new Pool({ connectionString: databaseUrl, max: 10 });
+  try {
+    if (initializeSchema) {
+      const schema = await readFile(schemaPath, "utf8");
+      await pool.query(schema);
+    } else {
+      await pool.query("SELECT 1");
+    }
+  } catch (error) {
+    if (!suppliedPool) await pool.end();
+    throw error;
+  }
 
   const app = express();
   app.use(express.json({ limit: "10mb" }));
 
-  app.use((request, _response, next) => {
+  app.use(async (request, _response, next) => {
     const rawToken = getCookie(request, SESSION_COOKIE);
     if (!rawToken) return next();
 
-    const session = database.prepare(`
-      SELECT users.id, users.email, users.name, users.matricula, users.role,
-        users.teacher_id, users.student_id
-      FROM sessions
-      JOIN users ON users.id = sessions.user_id
-      WHERE sessions.token_hash = ? AND sessions.expires_at > ?
-    `).get(hashValue(rawToken), Math.floor(Date.now() / 1000));
-
-    if (session) request.user = session;
-    next();
+    try {
+      const result = await pool.query(`
+        SELECT users.id, users.email, users.name, users.matricula, users.role,
+          users.teacher_id, users.student_id
+        FROM public.sessions
+        JOIN public.users ON public.users.id = public.sessions.user_id
+        WHERE public.sessions.token_hash = $1 AND public.sessions.expires_at > $2
+      `, [hashValue(rawToken), Math.floor(Date.now() / 1000)]);
+      if (result.rows[0]) request.user = result.rows[0];
+      next();
+    } catch (error) {
+      next(error);
+    }
   });
 
-  app.post("/api/auth/register", (request, response, next) => {
+  app.post("/api/auth/register", async (request, response, next) => {
     try {
       const { name, email, password, role, matricula: studentMatricula } = request.body || {};
       const cleanName = typeof name === "string" ? name.trim() : "";
@@ -154,9 +171,9 @@ export function createApp({
         if (typeof studentMatricula !== "string" || !/^\d{8}$/.test(studentMatricula)) {
           throw new HttpError(400, "Informe a matrícula de 8 dígitos do aluno.");
         }
-        const teachers = database.prepare("SELECT teacher_id, payload FROM teacher_data").all();
-        for (const teacher of teachers) {
-          const student = JSON.parse(teacher.payload).students.find((candidate) =>
+        const teachers = await pool.query("SELECT teacher_id, payload FROM public.teacher_data");
+        for (const teacher of teachers.rows) {
+          const student = hashPayload(teacher.payload).students.find((candidate) =>
             candidate.matricula === studentMatricula
             && String(candidate.name || "").trim().toLocaleLowerCase("pt-BR")
               === cleanName.toLocaleLowerCase("pt-BR")
@@ -171,68 +188,70 @@ export function createApp({
           throw new HttpError(400, "Confira a matrícula e o nome cadastrados pelo professor.");
         }
         matricula = studentMatricula;
-      } else {
-        matricula = createMatricula(database);
       }
 
       const recoveryCode = randomBytes(12).toString("hex").toUpperCase();
-      const createUser = database.transaction(() => {
-        const result = database.prepare(`
-          INSERT INTO users (email, name, matricula, role, password_hash, recovery_hash, teacher_id, student_id)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
+      const user = await executeTransaction(pool, async (client) => {
+        const newMatricula = role === "teacher" ? await createMatricula(client) : matricula;
+        const inserted = await client.query(`
+          INSERT INTO public.users
+            (email, name, matricula, role, password_hash, recovery_hash, teacher_id, student_id)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          RETURNING id, email, name, matricula, role, teacher_id, student_id
+        `, [
           cleanEmail,
           cleanName,
-          matricula,
+          newMatricula,
           role,
           hashPassword(password),
           hashValue(recoveryCode),
           teacherId,
           studentId
-        );
+        ]);
         if (role === "teacher") {
-          database.prepare("INSERT INTO teacher_data (teacher_id, payload) VALUES (?, ?)")
-            .run(result.lastInsertRowid, JSON.stringify(EMPTY_TEACHER_DATA));
+          await client.query(
+            "INSERT INTO public.teacher_data (teacher_id, payload) VALUES ($1, $2::jsonb)",
+            [inserted.rows[0].id, JSON.stringify(EMPTY_TEACHER_DATA)]
+          );
         }
-        return database.prepare(`
-          SELECT id, email, name, matricula, role, teacher_id, student_id
-          FROM users WHERE id = ?
-        `).get(result.lastInsertRowid);
+        return inserted.rows[0];
       });
 
-      const user = createUser();
       response.status(201).json({
         user: publicUser(user),
-        matricula,
+        matricula: user.matricula,
         recoveryCode
       });
     } catch (error) {
-      if (error.code === "SQLITE_CONSTRAINT_UNIQUE") {
+      if (error.code === "23505") {
         return response.status(409).json({ error: "Este e-mail ou matrícula já possui um cadastro." });
       }
       next(error);
     }
   });
 
-  app.post("/api/auth/login", (request, response, next) => {
+  app.post("/api/auth/login", async (request, response, next) => {
     try {
       const { matricula, password, role } = request.body || {};
       if (typeof matricula !== "string" || typeof password !== "string"
         || (role !== "teacher" && role !== "student")) {
         throw new HttpError(400, "Informe matrícula, senha e tipo de acesso.");
       }
-      const user = database.prepare(`
+      const result = await pool.query(`
         SELECT id, email, name, matricula, role, password_hash, teacher_id, student_id
-        FROM users WHERE matricula = ? AND role = ?
-      `).get(matricula.trim(), role);
+        FROM public.users WHERE matricula = $1 AND role = $2
+      `, [matricula.trim(), role]);
+      const user = result.rows[0];
       if (!user || !verifyPassword(password, user.password_hash)) {
         throw new HttpError(401, "Matrícula ou senha inválida.");
       }
 
       const rawToken = randomBytes(32).toString("base64url");
       const expiresAt = Math.floor(Date.now() / 1000) + SESSION_DURATION_SECONDS;
-      database.prepare("INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)")
-        .run(hashValue(rawToken), user.id, expiresAt);
+      await pool.query(
+        "INSERT INTO public.sessions (token_hash, user_id, expires_at) VALUES ($1, $2, $3)",
+        [hashValue(rawToken), user.id, expiresAt]
+      );
       const secure = process.env.COOKIE_SECURE === "true" ? "; Secure" : "";
       response.setHeader(
         "Set-Cookie",
@@ -244,16 +263,20 @@ export function createApp({
     }
   });
 
-  app.post("/api/auth/logout", (request, response) => {
-    const rawToken = getCookie(request, SESSION_COOKIE);
-    if (rawToken) {
-      database.prepare("DELETE FROM sessions WHERE token_hash = ?").run(hashValue(rawToken));
+  app.post("/api/auth/logout", async (request, response, next) => {
+    try {
+      const rawToken = getCookie(request, SESSION_COOKIE);
+      if (rawToken) {
+        await pool.query("DELETE FROM public.sessions WHERE token_hash = $1", [hashValue(rawToken)]);
+      }
+      response.setHeader("Set-Cookie", `${SESSION_COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`);
+      response.status(204).end();
+    } catch (error) {
+      next(error);
     }
-    response.setHeader("Set-Cookie", `${SESSION_COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`);
-    response.status(204).end();
   });
 
-  app.post("/api/auth/reset-password", (request, response, next) => {
+  app.post("/api/auth/reset-password", async (request, response, next) => {
     try {
       const { email, recoveryCode, password } = request.body || {};
       const cleanEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
@@ -261,17 +284,24 @@ export function createApp({
         || typeof recoveryCode !== "string") {
         throw new HttpError(400, "Informe o código de recuperação e uma nova senha válida.");
       }
-      const user = database.prepare("SELECT id, recovery_hash FROM users WHERE email = ?").get(cleanEmail);
-      const candidate = hashValue(recoveryCode.trim().toUpperCase());
+      const result = await pool.query(
+        "SELECT id, recovery_hash FROM public.users WHERE email = $1",
+        [cleanEmail]
+      );
+      const user = result.rows[0];
       const expected = Buffer.from(user?.recovery_hash || "0".repeat(64), "hex");
-      const actual = Buffer.from(candidate, "hex");
+      const actual = Buffer.from(hashValue(recoveryCode.trim().toUpperCase()), "hex");
       if (!user || expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
         throw new HttpError(400, "E-mail ou código de recuperação inválido.");
       }
       const newRecoveryCode = randomBytes(12).toString("hex").toUpperCase();
-      database.prepare("UPDATE users SET password_hash = ?, recovery_hash = ? WHERE id = ?")
-        .run(hashPassword(password), hashValue(newRecoveryCode), user.id);
-      database.prepare("DELETE FROM sessions WHERE user_id = ?").run(user.id);
+      await executeTransaction(pool, async (client) => {
+        await client.query(
+          "UPDATE public.users SET password_hash = $1, recovery_hash = $2 WHERE id = $3",
+          [hashPassword(password), hashValue(newRecoveryCode), user.id]
+        );
+        await client.query("DELETE FROM public.sessions WHERE user_id = $1", [user.id]);
+      });
       response.json({ recoveryCode: newRecoveryCode });
     } catch (error) {
       next(error);
@@ -283,34 +313,46 @@ export function createApp({
     response.json(publicUser(request.user));
   });
 
-  app.get("/api/data", (request, response) => {
-    if (!request.user) return response.status(401).json({ error: "Entre na sua conta para continuar." });
-    const teacherId = request.user.role === "student" ? request.user.teacher_id : request.user.id;
-    const row = database.prepare("SELECT payload, revision FROM teacher_data WHERE teacher_id = ?")
-      .get(teacherId);
-    const data = row ? JSON.parse(row.payload) : structuredClone(EMPTY_TEACHER_DATA);
-
-    if (request.user.role === "student") {
-      const student = data.students.find((item) => item.id === request.user.student_id);
-      const studentActivities = student
-        ? data.activities.filter((item) => item.className === student.className)
-        : [];
-      const activityIds = new Set(studentActivities.map((item) => item.id));
-      data.students = student ? [student] : [];
-      data.activities = studentActivities;
-      data.grades = Object.fromEntries(
-        Object.entries(data.grades)
-          .filter(([activityId]) => activityIds.has(activityId))
-          .map(([activityId, grades]) => [activityId, { [request.user.student_id]: grades[request.user.student_id] }])
+  app.get("/api/data", async (request, response, next) => {
+    try {
+      if (!request.user) return response.status(401).json({ error: "Entre na sua conta para continuar." });
+      const teacherId = request.user.role === "student" ? request.user.teacher_id : request.user.id;
+      const result = await pool.query(
+        "SELECT payload, revision FROM public.teacher_data WHERE teacher_id = $1",
+        [teacherId]
       );
+      const row = result.rows[0];
+      const data = row ? hashPayload(row.payload) : structuredClone(EMPTY_TEACHER_DATA);
+
+      if (request.user.role === "student") {
+        const student = data.students.find((item) => item.id === request.user.student_id);
+        const studentActivities = student
+          ? data.activities.filter((item) => item.className === student.className)
+          : [];
+        const activityIds = new Set(studentActivities.map((item) => item.id));
+        data.students = student ? [student] : [];
+        data.activities = studentActivities;
+        data.grades = Object.fromEntries(
+          Object.entries(data.grades)
+            .filter(([activityId]) => activityIds.has(activityId))
+            .map(([activityId, grades]) => [
+              activityId,
+              { [request.user.student_id]: grades[request.user.student_id] }
+            ])
+        );
+      }
+      response.json({ revision: row?.revision || 0, data });
+    } catch (error) {
+      next(error);
     }
-    response.json({ revision: row?.revision || 0, data });
   });
 
-  app.put("/api/data", (request, response, next) => {
+  app.put("/api/data", async (request, response, next) => {
     try {
       if (!request.user) throw new HttpError(401, "Entre na sua conta para continuar.");
-      if (request.user.role !== "teacher") throw new HttpError(403, "Somente professores podem alterar os dados.");
+      if (request.user.role !== "teacher") {
+        throw new HttpError(403, "Somente professores podem alterar os dados.");
+      }
       const { revision, data } = request.body || {};
       if (!Number.isInteger(revision) || revision < 0 || !validateTeacherData(data)) {
         throw new HttpError(400, "Os dados enviados estão incompletos ou inválidos.");
@@ -320,25 +362,27 @@ export function createApp({
         throw new HttpError(413, "O conjunto de dados é grande demais para salvar.");
       }
 
-      const save = database.transaction(() => {
-        const current = database.prepare("SELECT revision FROM teacher_data WHERE teacher_id = ?")
-          .get(request.user.id);
-        const currentRevision = current?.revision || 0;
+      const nextRevision = await executeTransaction(pool, async (client) => {
+        const current = await client.query(
+          "SELECT revision FROM public.teacher_data WHERE teacher_id = $1 FOR UPDATE",
+          [request.user.id]
+        );
+        const currentRevision = current.rows[0]?.revision || 0;
         if (currentRevision !== revision) {
           throw new HttpError(409, "Os dados foram alterados em outra tela. Atualize a página antes de salvar novamente.");
         }
-        const nextRevision = currentRevision + 1;
-        database.prepare(`
-          INSERT INTO teacher_data (teacher_id, payload, revision, updated_at)
-          VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-          ON CONFLICT(teacher_id) DO UPDATE SET
-            payload = excluded.payload,
-            revision = excluded.revision,
+        const next = currentRevision + 1;
+        await client.query(`
+          INSERT INTO public.teacher_data (teacher_id, payload, revision, updated_at)
+          VALUES ($1, $2::jsonb, $3, CURRENT_TIMESTAMP)
+          ON CONFLICT (teacher_id) DO UPDATE SET
+            payload = EXCLUDED.payload,
+            revision = EXCLUDED.revision,
             updated_at = CURRENT_TIMESTAMP
-        `).run(request.user.id, serializedData, nextRevision);
-        return nextRevision;
+        `, [request.user.id, serializedData, next]);
+        return next;
       });
-      response.json({ revision: save() });
+      response.json({ revision: nextRevision });
     } catch (error) {
       next(error);
     }
@@ -357,7 +401,7 @@ export function createApp({
     response.status(500).json({ error: "Ocorreu um erro interno. Tente novamente." });
   });
 
-  return { app, database, close: () => database.close() };
+  return { app, pool, close: () => pool.end() };
 }
 
 const isMainModule = process.argv[1]
@@ -365,12 +409,21 @@ const isMainModule = process.argv[1]
 
 if (isMainModule) {
   const apiOnly = process.argv.includes("--api-only");
-  const { app } = createApp({
+  createApp({
     staticDirectory: apiOnly ? null : defaultStaticDirectory
-  });
-  const port = Number(process.env.PORT || (apiOnly ? 3001 : 5173));
-  const host = process.env.HOST || (apiOnly ? "127.0.0.1" : "0.0.0.0");
-  app.listen(port, host, () => {
-    console.log(`Gavetas disponível em http://${host}:${port}`);
+  }).then(({ app, pool }) => {
+    const port = apiOnly ? 3001 : Number(process.env.PORT || 5173);
+    const host = apiOnly ? "127.0.0.1" : process.env.HOST || "0.0.0.0";
+    const server = app.listen(port, host, () => {
+      console.log(`Gavetas disponível em http://${host}:${port}`);
+    });
+    const shutdown = () => {
+      server.close(() => pool.end().then(() => process.exit(0)));
+    };
+    process.once("SIGINT", shutdown);
+    process.once("SIGTERM", shutdown);
+  }).catch((error) => {
+    console.error("Não foi possível iniciar o servidor. Confira DATABASE_URL e a conexão com o Supabase.", error);
+    process.exitCode = 1;
   });
 }
