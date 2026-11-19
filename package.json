@@ -1,0 +1,22 @@
+{
+  "name": "gavetas-uc7",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k -n api,web \"node server.js --api-only\" \"vite --host 0.0.0.0\"",
+    "build": "vite build",
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.2.0",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.5",
+    "concurrently": "^9.2.1",
+    "tailwindcss": "^4.3.5",
+    "vite": "^6.4.6"
+  }
+}

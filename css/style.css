@@ -32,6 +32,17 @@ body {
   margin: 0;
 }
 
+.database-save-error {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  margin: 0;
+  padding: 12px 20px;
+  background: #fee4e2;
+  color: var(--color-danger);
+  text-align: center;
+}
+
 .header {
   background-color: var(--color-surface);
   padding: 10px 24px;

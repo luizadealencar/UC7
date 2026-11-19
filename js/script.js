@@ -1,8 +1,27 @@
-const STORAGE_KEY = window.currentProfessor && window.currentProfessor.role === "student"
-  ? window.currentProfessor.teacherKey
-  : window.currentProfessor
-    ? `gavetaDeAlunos-${window.currentProfessor.matricula}`
-  : "gavetaDeAlunos";
+import "./auth.js";
+
+const authenticatedUser = await window.authReady;
+if (!authenticatedUser) throw new Error("Não foi possível iniciar sem uma sessão ativa.");
+
+let dataResult;
+try {
+  const dataResponse = await fetch("/api/data");
+  dataResult = await dataResponse.json();
+  if (!dataResponse.ok) {
+    if (dataResponse.status === 401) window.location.replace("login.html");
+    throw new Error(dataResult.error || "Não foi possível carregar os dados do banco.");
+  }
+} catch (error) {
+  const message = document.createElement("p");
+  message.className = "database-save-error";
+  message.setAttribute("role", "alert");
+  message.textContent = error instanceof Error
+    ? `Não foi possível carregar os dados: ${error.message}`
+    : "Não foi possível carregar os dados do banco.";
+  document.body.prepend(message);
+  throw error;
+}
+
 const CLASS_NAMES = ["1ADM1", "1ADM2", "1ADM3", "1MSI", "2MSI", "Senac"];
 const SUBJECT_NAMES = [
   "Informática Aplicada",
@@ -57,6 +76,8 @@ let ultimaAtividade = "";
 let ultimaTurma = "";
 let relatorioAtual = null;
 let mesDoCalendario = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+let revisaoBanco = dataResult.revision;
+let filaSalvamento = Promise.resolve();
 
 if (menuToggle && navbar) {
   const fecharMenu = () => {
@@ -84,19 +105,8 @@ if (menuToggle && navbar) {
   });
 }
 
-function carregarBanco() {
-  const dadosSalvos = localStorage.getItem(STORAGE_KEY);
-  if (!dadosSalvos) {
-    return { activities: [], students: [], grades: {}, calendarEvents: [] };
-  }
-
-  let bancoSalvo;
-  try {
-    bancoSalvo = JSON.parse(dadosSalvos);
-  } catch (error) {
-    console.error("Não foi possível carregar os dados locais do calendário.", error);
-    return { activities: [], students: [], grades: {}, calendarEvents: [] };
-  }
+function carregarBanco(bancoSalvo) {
+  bancoSalvo = bancoSalvo || {};
   const alunosAntigos = Array.isArray(bancoSalvo.students) ? bancoSalvo.students : [];
   const alunosMigrados = alunosAntigos.map((aluno, indice) => (
     typeof aluno === "string"
@@ -129,7 +139,7 @@ function carregarBanco() {
   };
 }
 
-const bancoDeAtividades = carregarBanco();
+const bancoDeAtividades = carregarBanco(dataResult.data);
 const matriculasExistentes = new Set(
   bancoDeAtividades.students.map((student) => student.matricula).filter(Boolean)
 );
@@ -143,13 +153,43 @@ function gerarMatriculaAluno() {
   return matricula;
 }
 
+let matriculasAtualizadas = false;
 bancoDeAtividades.students.forEach((student) => {
-  if (!student.matricula) student.matricula = gerarMatriculaAluno();
+  if (!student.matricula) {
+    student.matricula = gerarMatriculaAluno();
+    matriculasAtualizadas = true;
+  }
 });
-localStorage.setItem(STORAGE_KEY, JSON.stringify(bancoDeAtividades));
+if (matriculasAtualizadas && authenticatedUser.role === "teacher") salvarBanco();
 
 function salvarBanco() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(bancoDeAtividades));
+  const snapshot = JSON.parse(JSON.stringify(bancoDeAtividades));
+  filaSalvamento = filaSalvamento.then(async () => {
+    const response = await fetch("/api/data", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ revision: revisaoBanco, data: snapshot })
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || "Não foi possível salvar no banco de dados.");
+    }
+    revisaoBanco = result.revision;
+    document.querySelector("#database-save-error")?.remove();
+  }).catch((error) => {
+    let message = document.querySelector("#database-save-error");
+    if (!message) {
+      message = document.createElement("p");
+      message.id = "database-save-error";
+      message.className = "database-save-error";
+      message.setAttribute("role", "alert");
+      document.body.prepend(message);
+    }
+    message.textContent = error instanceof Error
+      ? `Não foi possível salvar: ${error.message}`
+      : "Não foi possível salvar no banco de dados.";
+  });
+  return filaSalvamento;
 }
 
 function preencherSelecaoRelatorio(select, valores, textoInicial) {
@@ -913,11 +953,10 @@ if (xlsxImportForm) {
         notas[atividade.id] = notasDaAtividade;
       });
 
-      const bancoImportado = { activities: atividades, students: alunos, grades: notas };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(bancoImportado));
       bancoDeAtividades.activities = atividades;
       bancoDeAtividades.students = alunos;
       bancoDeAtividades.grades = notas;
+      salvarBanco();
       renderizarAlunos();
       xlsxImportForm.reset();
       atualizarStatusImportacao(

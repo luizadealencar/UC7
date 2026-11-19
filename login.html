@@ -67,14 +67,16 @@
     <form id="forgot-form" class="auth-form">
       <label for="forgot-email">E-mail cadastrado</label>
       <input id="forgot-email" type="email" required>
+      <label for="forgot-recovery-code">Código de recuperação</label>
+      <input id="forgot-recovery-code" type="text" maxlength="24" autocomplete="off" required>
       <label for="forgot-password">Nova senha</label>
       <input id="forgot-password" type="password" minlength="6" required>
       <button class="auth-submit" type="submit">Restaurar senha</button>
-      <small>Esta versão local restaura a senha diretamente neste navegador.</small>
+      <small>Use o código exibido quando a conta foi cadastrada.</small>
       <a id="back-to-login" class="forgot-password-link" href="#login-form">Voltar para entrar</a>
     </form>
   </main>
-  <script src="js/auth.js"></script>
+  <script type="module" src="js/auth.js"></script>
 </body>
 
 </html>
