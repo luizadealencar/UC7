@@ -9,6 +9,7 @@ Aplicação web para professores organizarem calendário escolar, atividades, al
 - Cadastro de alunos e importação de planilhas `.xlsx`.
 - Registro e consulta de notas, com geração e exportação de relatórios.
 - Acesso separado para professores e alunos.
+- Modos claro e escuro, com preferência salva no navegador.
 - Persistência centralizada no Supabase.
 
 ## Tecnologias

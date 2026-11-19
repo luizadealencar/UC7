@@ -1,17 +1,33 @@
 @import "tailwindcss";
 
 :root {
+  color-scheme: light;
   --color-page-background: #f0f0f0;
   --color-surface: #ffffff;
+  --color-surface-soft: #f7f8fc;
+  --color-surface-subtle: #f8faff;
   --color-text: #333333;
   --color-heading: #23324a;
   --color-text-muted: #64748b;
+  --color-text-secondary: #52627a;
+  --color-text-strong: #575454;
+  --color-text-soft: #5b6779;
   --color-primary: #0c36c0;
+  --color-on-primary: #ffffff;
   --color-accent: #4d77ff;
+  --color-primary-hover: #365fdb;
   --color-border: #dce5f2;
+  --color-border-strong: #e2e8f0;
+  --color-border-soft: #e8edf5;
   --color-input-border: #cbd5e1;
+  --color-input-background: #ffffff;
   --color-success: #18794e;
+  --color-success-background: #e7f6ed;
   --color-danger: #b42318;
+  --color-danger-background: #fee4e2;
+  --color-neutral-action: #666666;
+  --color-disabled: #999999;
+  --color-table-border: #e2e2e2;
   --color-calendar-header: #fff7cf;
   --color-calendar-weekday: #a6c984;
   --color-calendar-weekday-border: #a8c694;
@@ -20,6 +36,54 @@
   --color-calendar-date: #475569;
   --color-event-primary: #3e56c9;
   --color-event-alternate: #ea3511;
+  --color-event-text: #ffffff;
+  --color-student-heading: #eef3ff;
+  --color-auth-background: linear-gradient(135deg, #eef3ff, #f8fafc);
+  --color-report-background: linear-gradient(135deg, #f8faff, #ffffff);
+  --color-shadow: rgba(0, 0, 0, 0.1);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-page-background: #111827;
+  --color-surface: #1f2937;
+  --color-surface-soft: #273449;
+  --color-surface-subtle: #202c3c;
+  --color-text: #e5e7eb;
+  --color-heading: #edf2fb;
+  --color-text-muted: #a8b3c5;
+  --color-text-secondary: #bdc8d8;
+  --color-text-strong: #e5e7eb;
+  --color-text-soft: #bdc8d8;
+  --color-primary: #7895ff;
+  --color-on-primary: #101827;
+  --color-accent: #91a8ff;
+  --color-primary-hover: #91a8ff;
+  --color-border: #3b475a;
+  --color-border-strong: #46546a;
+  --color-border-soft: #39465b;
+  --color-input-border: #526176;
+  --color-input-background: #182232;
+  --color-success: #77dda8;
+  --color-success-background: #173c31;
+  --color-danger: #ff9a9a;
+  --color-danger-background: #492b32;
+  --color-neutral-action: #566276;
+  --color-disabled: #586579;
+  --color-table-border: #3b475a;
+  --color-calendar-header: #3a3528;
+  --color-calendar-weekday: #34503e;
+  --color-calendar-weekday-border: #526b55;
+  --color-calendar-weekday-text: #e5f1dc;
+  --color-calendar-empty: #192334;
+  --color-calendar-date: #d0d8e5;
+  --color-event-primary: #566fd4;
+  --color-event-alternate: #c94d37;
+  --color-event-text: #ffffff;
+  --color-student-heading: #2b3b58;
+  --color-auth-background: linear-gradient(135deg, #111827, #1d293b);
+  --color-report-background: linear-gradient(135deg, #202c3c, #1f2937);
+  --color-shadow: rgba(0, 0, 0, 0.28);
 }
 
 * {
@@ -28,8 +92,49 @@
 
 body {
   background-color: var(--color-page-background);
+  color: var(--color-text);
   font-family: "Rubik", sans-serif;
   margin: 0;
+}
+
+input,
+select,
+textarea {
+  background-color: var(--color-input-background);
+  color: var(--color-text);
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 7px 11px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  font: inherit;
+  white-space: nowrap;
+}
+
+.theme-toggle:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.theme-toggle-icon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.theme-toggle-floating {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
 }
 
 .database-save-error {
@@ -38,7 +143,7 @@ body {
   z-index: 1000;
   margin: 0;
   padding: 12px 20px;
-  background: #fee4e2;
+  background: var(--color-danger-background);
   color: var(--color-danger);
   text-align: center;
 }
@@ -46,7 +151,7 @@ body {
 .header {
   background-color: var(--color-surface);
   padding: 10px 24px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 6px var(--color-shadow);
 }
 
 .navbar {
@@ -96,10 +201,10 @@ body {
 
 .logout-button {
   padding: 6px 10px;
-  border: 1px solid #d5dce8;
+  border: 1px solid var(--color-border);
   border-radius: 4px;
   background-color: var(--color-surface);
-  color: #52627a;
+  color: var(--color-text-secondary);
   cursor: pointer;
   font: inherit;
 }
@@ -115,7 +220,7 @@ body {
   justify-content: center;
   min-height: 100vh;
   padding: 20px;
-  background: linear-gradient(135deg, #eef3ff, #f8fafc);
+  background: var(--color-auth-background);
 }
 
 .auth-card {
@@ -218,7 +323,7 @@ body {
   border: 0;
   border-radius: 5px;
   background: var(--color-primary);
-  color: var(--color-surface);
+  color: var(--color-on-primary);
   cursor: pointer;
   font: inherit;
   font-weight: 600;
@@ -251,7 +356,7 @@ body {
   margin: 12px 0 0;
   padding: 10px;
   border-radius: 5px;
-  background: #e7f6ed;
+  background: var(--color-success-background);
   color: var(--color-success);
   font-size: 0.9rem;
 }
@@ -290,7 +395,7 @@ body {
   border: 0;
   border-radius: 50%;
   background: var(--color-primary);
-  color: var(--color-surface);
+  color: var(--color-on-primary);
   cursor: pointer;
   font-size: 1.6rem;
   line-height: 1;
@@ -351,7 +456,7 @@ body {
   overflow: hidden;
   border-radius: 3px;
   background: var(--color-event-primary);
-  color: var(--color-surface);
+  color: var(--color-event-text);
   font-size: 0.78rem;
   font-weight: 600;
   text-align: left;
@@ -384,7 +489,7 @@ body {
   width: 100%;
   height: 42px;
   padding: 8px;
-  border: 1px solid #cccccc;
+  border: 1px solid var(--color-input-border);
   border-radius: 4px;
   background: var(--color-surface);
   font: inherit;
@@ -396,7 +501,7 @@ body {
   border: 0;
   border-radius: 4px;
   background: var(--color-primary);
-  color: var(--color-surface);
+  color: var(--color-on-primary);
   cursor: pointer;
   font: inherit;
   font-weight: 600;
@@ -417,7 +522,7 @@ body {
   padding: 12px;
   border-left: 4px solid var(--color-accent);
   border-radius: 4px;
-  background: #f7f8fc;
+  background: var(--color-surface-soft);
 }
 
 .calendar-event div {
@@ -443,12 +548,12 @@ body {
 #student-grade-table th,
 #student-grade-table td {
   padding: 10px;
-  border-bottom: 1px solid #e2e2e2;
+  border-bottom: 1px solid var(--color-table-border);
   text-align: left;
 }
 
 #student-grade-table th {
-  background: #eef3ff;
+  background: var(--color-student-heading);
   color: var(--color-heading);
 }
 
@@ -459,7 +564,7 @@ body {
   width: 44px;
   height: 44px;
   padding: 0;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border-strong);
   border-radius: 8px;
   background-color: var(--color-surface);
   cursor: pointer;
@@ -541,7 +646,7 @@ body {
   width: 100%;
   height: 42px;
   padding: 8px;
-  border: 1px solid #cccccc;
+  border: 1px solid var(--color-input-border);
   border-radius: 4px;
   font-family: inherit;
 }
@@ -552,14 +657,14 @@ body {
   border: none;
   border-radius: 4px;
   background-color: var(--color-primary);
-  color: var(--color-surface);
+  color: var(--color-on-primary);
   cursor: pointer;
   font-family: inherit;
   font-weight: 600;
 }
 
 #expense-form button:hover {
-  background-color: #365fdb;
+  background-color: var(--color-primary-hover);
 }
 
 #activity-list {
@@ -578,7 +683,7 @@ body {
   padding: 12px;
   border-left: 4px solid var(--color-accent);
   border-radius: 4px;
-  background-color: #f7f8fc;
+  background-color: var(--color-surface-soft);
 }
 
 .activity-item-content {
@@ -597,7 +702,7 @@ body {
   padding: 6px 12px;
   border: none;
   border-radius: 4px;
-  color: var(--color-surface);
+  color: var(--color-on-primary);
   cursor: pointer;
   font: inherit;
 }
@@ -611,11 +716,11 @@ body {
 }
 
 .cancel-button {
-  background-color: #666666;
+  background-color: var(--color-neutral-action);
 }
 
 .record-button:disabled {
-  background-color: #999999;
+  background-color: var(--color-disabled);
   cursor: not-allowed;
 }
 
@@ -633,7 +738,7 @@ body {
   flex: 1 1 140px;
   min-height: 38px;
   padding: 6px 8px;
-  border: 1px solid #cccccc;
+  border: 1px solid var(--color-input-border);
   border-radius: 4px;
   font: inherit;
 }
@@ -641,7 +746,7 @@ body {
 .container h1 {
   margin: 0;
   font-weight: 600;
-  color: #575454;
+  color: var(--color-text-strong);
 }
 
 .grade-controls {
@@ -658,7 +763,7 @@ body {
   width: 100%;
   min-height: 40px;
   padding: 8px;
-  border: 1px solid #cccccc;
+  border: 1px solid var(--color-input-border);
   border-radius: 4px;
   font: inherit;
 }
@@ -692,7 +797,7 @@ body {
 #grade-table th,
 #grade-table td {
   padding: 8px;
-  border-bottom: 1px solid #e2e2e2;
+  border-bottom: 1px solid var(--color-table-border);
   text-align: left;
 }
 
@@ -705,7 +810,7 @@ body {
   width: 76px;
   min-height: 36px;
   padding: 8px;
-  border: 1px solid #cccccc;
+  border: 1px solid var(--color-input-border);
   border-radius: 4px;
   background-color: var(--color-surface);
   color: var(--color-text);
@@ -752,7 +857,7 @@ body {
 }
 
 #grade-message {
-  color: #575454;
+  color: var(--color-text-strong);
 }
 
 #save-grades {
@@ -764,7 +869,7 @@ body {
   padding: 24px;
   border: 1px solid var(--color-border);
   border-radius: 12px;
-  background: linear-gradient(135deg, #f8faff, var(--color-surface));
+  background: var(--color-report-background);
 }
 
 .report-heading {
@@ -790,14 +895,14 @@ body {
 .report-storage-badge {
   padding: 6px 10px;
   border-radius: 999px;
-  background: #e7f6ed;
+  background: var(--color-success-background);
   color: var(--color-success);
   font-size: 0.85rem;
   white-space: nowrap;
 }
 
 .report-description {
-  color: #5b6779;
+  color: var(--color-text-soft);
 }
 
 .report-form {
@@ -813,7 +918,7 @@ body {
   width: 100%;
   height: 42px;
   padding: 8px;
-  border: 1px solid #cccccc;
+  border: 1px solid var(--color-input-border);
   border-radius: 4px;
   font: inherit;
 }
@@ -824,7 +929,7 @@ body {
   border: none;
   border-radius: 4px;
   background: var(--color-primary);
-  color: var(--color-surface);
+  color: var(--color-on-primary);
   cursor: pointer;
   font: inherit;
   font-weight: 600;
@@ -855,18 +960,18 @@ body {
 .report-preview th,
 .report-preview td {
   padding: 9px 12px;
-  border-bottom: 1px solid #e8edf5;
+  border-bottom: 1px solid var(--color-border-soft);
   text-align: left;
 }
 
 .report-preview th {
-  background: #eef3ff;
+  background: var(--color-student-heading);
   color: var(--color-heading);
 }
 
 .report-preview .report-table-header {
   background: var(--color-primary);
-  color: var(--color-surface);
+  color: var(--color-on-primary);
   font-size: 1rem;
 }
 
@@ -878,7 +983,7 @@ body {
 }
 
 .secondary-button {
-  background: #52627a;
+  background: var(--color-text-secondary);
 }
 
 .student-form {
@@ -899,7 +1004,7 @@ body {
   border: none;
   border-radius: 4px;
   background-color: var(--color-primary);
-  color: var(--color-surface);
+  color: var(--color-on-primary);
   cursor: pointer;
   font: inherit;
   font-weight: 600;
@@ -910,7 +1015,7 @@ body {
   padding: 24px;
   border: 1px solid var(--color-border);
   border-radius: 10px;
-  background-color: #f8faff;
+  background-color: var(--color-surface-subtle);
 }
 
 .import-panel h2 {
@@ -920,7 +1025,7 @@ body {
 
 .import-panel > p:first-of-type {
   margin-top: 0;
-  color: #5b6779;
+  color: var(--color-text-soft);
 }
 
 .import-form {
@@ -944,7 +1049,7 @@ body {
   border: none;
   border-radius: 4px;
   background-color: var(--color-primary);
-  color: var(--color-surface);
+  color: var(--color-on-primary);
   cursor: pointer;
   font: inherit;
   font-weight: 600;
@@ -972,7 +1077,7 @@ body {
 
 .students-page > h2 {
   margin: 32px 0 16px;
-  color: #303b4b;
+  color: var(--color-text-strong);
 }
 
 .student-list {
@@ -985,10 +1090,10 @@ body {
 .student-group {
   min-width: 0;
   padding: 20px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border-strong);
   border-radius: 10px;
-  background-color: #f8faff;
-  box-shadow: 0 3px 10px rgba(20, 42, 80, 0.06);
+  background-color: var(--color-surface-subtle);
+  box-shadow: 0 3px 10px var(--color-shadow);
 }
 
 .student-group h2 {
@@ -1023,7 +1128,7 @@ body {
   gap: 8px;
   min-width: 0;
   padding: 6px 0;
-  border-bottom: 1px solid #e8edf5;
+  border-bottom: 1px solid var(--color-border-soft);
   counter-increment: student;
 }
 
@@ -1072,7 +1177,7 @@ body {
     align-items: stretch;
     gap: 0;
     padding-top: 6px;
-    border-top: 1px solid #e8edf5;
+    border-top: 1px solid var(--color-border-soft);
   }
 
   .navbar.menu-open .nav-links {
@@ -1080,12 +1185,18 @@ body {
   }
 
   .nav-links li + li {
-    border-top: 1px solid #f0f2f5;
+    border-top: 1px solid var(--color-border-soft);
   }
 
   .nav-links a {
     display: block;
     padding: 12px 4px;
+  }
+
+  .theme-toggle {
+    width: 100%;
+    justify-content: flex-start;
+    margin: 8px 0;
   }
 
   .container {
